@@ -20,8 +20,6 @@ int main() {
     std::cout << "[Network]: launch on port 8090." << std::endl;
     app.port(8090).multithreaded().run();
 
-    return 0;
-
     //MAIN MENU
     
     std::cout << "Thank you for using Golden Hours!" << std::endl;
@@ -34,7 +32,7 @@ int main() {
     std::cin >> userChoice;
     if (userChoice == 1) {
         while (running) {
-            string username;
+            string userName;
             string password;
             std::cout << "Enter your username: " << std::endl;
             std::cout << "Enter 'm' to return to the Main Menu" << std::endl;
@@ -57,7 +55,8 @@ int main() {
                         break;
                     }
                 }
-                accountMenu(username);  ////Specific menus for senior/volunteer accounts are accessed here using an outside function.
+                accountMenu(userName);  //Specific account menus are accessed here using Volunteer() or Senior()
+                                        //member function depending on the username. 
             }
                     
         }
@@ -74,10 +73,10 @@ int main() {
 
             if (signUpChoice == 1) {
                 Volunteer() newUser;
-                newUser.signUp();
+                newUser.signUp();                    //Volunteer() member function
             } else if (signUpChoice == 2) {
                 Senior() newUser;
-                newUser.signUp();
+                newUser.signUp();                    //Senior() member function
             } else if (signUpChoice == 3) {
                 running = false;
             } else {
@@ -86,6 +85,7 @@ int main() {
                 }
             }
     } else if (userChoice == 3) {
+        std::cout << "See you next time!" << std::endl;
         return 0;
     } else {
         while (userChoice != 1 && userChoice != 2) {
