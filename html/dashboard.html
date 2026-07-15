@@ -1,0 +1,463 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .role-badge {
+            background-color: #e1f5fe;
+            color: #0288d1;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #e4e6eb;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+            .tab-btn.active {
+                background-color: #007BFF;
+                color: white;
+            }
+
+        .grid-card {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-layout {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+
+            .form-group input, .form-group select, .form-group textarea {
+                width: 100%;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                box-sizing: border-box;
+            }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 80px;
+                font-family: inherit;
+            }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #007BFF;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #DC3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28A745;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .task-meta {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #555;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <div class="header">
+            <div>
+                <h1 id="welcome-title">Loading Portal...</h1>
+                <span id="role-text" class="role-badge">---</span>
+            </div>
+            <div>
+                <button class="btn btn-danger" onclick="location.href='/logout'">Logout</button>
+            </div>
+        </div>
+
+        <div id="senior-portal" class="hidden">
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchSeniorTab('view-tasks')">View Active Tasks</button>
+                <button class="tab-btn" onclick="switchSeniorTab('post-task')">Post a New Task</button>
+                <button class="tab-btn" onclick="switchSeniorTab('senior-settings')">Account Settings</button>
+            </div>
+
+            <div id="sec-view-tasks" class="tab-content">
+                <h3>Your Active tasks</h3>
+                <div id="senior-tasks-container">Loading your tasks...</div>
+            </div>
+
+            <div id="sec-post-task" class="tab-content hidden">
+                <h3>Post a New Task Requirement</h3>
+                <form action="/api/tasks/create" method="POST" class="form-layout">
+                    <div class="form-group">
+                        <label>Task Title / Work Scope</label>
+                        <input type="text" name="title" required placeholder="e.g. Need backyard leaves raked">
+                    </div>
+                    <div class="form-group">
+                        <label>What type of task is this?</label>
+                        <select name="category">
+                            <option value="Yard work">Yard work</option>
+                            <option value="cleaning">Cleaning</option>
+                            <option value="organizing">Organizing</option>
+                            <option value="cooking">Cooking</option>
+                            <option value="animal care">Animal Care</option>
+                            <option value="socializing">Socializing</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>What day and time would you like it completed?</label>
+                        <input type="datetime-local" name="task_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>How many volunteer hours do you expect this task to take?</label>
+                        <input type="number" name="hours_expected" min="1" max="24" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Task Description & Details</label>
+                        <textarea name="description" placeholder="Describe the details here..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Location / Address</label>
+                        <input type="text" name="address" placeholder="" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Publish and Post Task</button>
+                </form>
+            </div>
+
+            <div id="sec-senior-settings" class="tab-content hidden">
+                <h3>Account Controls</h3>
+                <p>Warning: Deleting your account will completely remove your data from the database.</p>
+                <form action="/api/account/delete" method="POST">
+                    <button type="submit" class="btn btn-danger">Confirm Account Deletion</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="volunteer-portal" class="hidden">
+            <div id="hours-banner" style="background: #d4edda; color: #155724; padding: 12px; margin-bottom:15px; border-radius:6px; font-weight:bold;">
+                Total Completed Volunteer Hours: <span id="total-hours-span">0</span> hours
+                <button class="btn btn-primary" style="float: right; margin-top: -6px;" onclick="alert('Feature not implemented')">Print Form</button>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" id="btn-avail" onclick="switchVolunteerTab('avail')">Available Tasks</button>
+                <button class="tab-btn" id="btn-accepted" onclick="switchVolunteerTab('accepted')">Current Accepted Tasks</button>
+                <button class="tab-btn" id="btn-completed" onclick="switchVolunteerTab('completed')">Completed Tasks</button>
+                <button class="tab-btn" id="btn-vol-settings" onclick="switchVolunteerTab('vol-settings')">Settings</button>
+            </div>
+
+            <div class="filters" id="vol-filters-div">
+                <input type="text" id="search-title" placeholder="Search by Title..." oninput="renderVolunteerTasks()">
+                <select id="filter-type" onchange="renderVolunteerTasks()">
+                    <option value="">All Types</option>
+                    <option value="Yard work">Yard work</option>
+                    <option value="cleaning">Cleaning</option>
+                    <option value="organizing">Organizing</option>
+                    <option value="cooking">Cooking</option>
+                    <option value="animal care">Animal Care</option>
+                    <option value="socializing">Socializing</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div id="volunteer-tasks-container">Loading matching tasks...</div>
+
+            <div id="sec-vol-settings" class="tab-content hidden">
+                <h3>Account Settings</h3>
+                <form action="/api/account/delete" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete Profile Permanently</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = {};
+        let globalTasks = [];
+        let currentVolTab = 'avail';
+
+        function formatTaskDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                return date.toLocaleString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        async function initializeDashboard() {
+            const userRes = await fetch('/api/user-info');
+            currentUser = await userRes.json();
+
+            document.getElementById('welcome-title').innerText = `Welcome back, ${currentUser.username || 'User'}`;
+            document.getElementById('role-text').innerText = currentUser.role === 'Poster' ? 'Senior' : 'Volunteer';
+
+            if (currentUser.role === 'Poster') {
+                document.getElementById('senior-portal').classList.remove('hidden');
+                loadSeniorTasks();
+            } else {
+                document.getElementById('volunteer-portal').classList.remove('hidden');
+                loadVolunteerData();
+            }
+        }
+
+        function switchSeniorTab(tabName) {
+            document.querySelectorAll('#senior-portal .tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#senior-portal .tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (event) event.target.classList.add('active');
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            if (tabName === 'view-tasks') loadSeniorTasks();
+        }
+
+        async function loadSeniorTasks() {
+            const res = await fetch('/api/tasks');
+            const tasks = await res.json();
+            const container = document.getElementById('senior-tasks-container');
+            container.innerHTML = '';
+
+            if (tasks.length === 0) {
+                container.innerHTML = `<p>No current tasks posted.</p>`;
+                return;
+            }
+
+            tasks.forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'grid-card';
+                let statusActionHTML = ``;
+
+                if (task.status === 'Open') {
+                    statusActionHTML = `<form action="/api/tasks/action" method="POST">
+                        <input type="hidden" name="task_id" value="${task.task_id}">
+                        <input type="hidden" name="action" value="unlist">
+                        <button class="btn btn-danger" type="submit">Unlist Task</button>
+                    </form>`;
+                } else if (task.status === 'Accepted') {
+                    statusActionHTML = `<div>
+                        <span style="color:orange; font-weight:bold; margin-right:10px;">Assigned to: ${task.worker}</span>
+                        <form action="/api/tasks/action" method="POST" style="display:inline;">
+                            <input type="hidden" name="task_id" value="${task.task_id}">
+                            <input type="hidden" name="action" value="complete">
+                            <button class="btn btn-success" type="submit">Mark Complete</button>
+                        </form>
+                    </div>`;
+                } else {
+                    statusActionHTML = `<span style="color:green; font-weight:bold;">Status: ${task.status}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <strong>[#${task.task_id}] ${task.title}</strong> (${task.category})<br>
+                        <div class="task-meta">
+                            <strong>Scheduled Time:</strong> ${formatTaskDate(task.date)}<br>
+                            <strong>Duration Credit:</strong> ${task.hours_expected} hours<br>
+                            <strong>Address Location:</strong> ${task.address || 'Not Provided'}<br>
+                            <strong>Description:</strong> ${task.description}
+                        </div>
+                    </div>
+                    <div>${statusActionHTML}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchVolunteerTab(tab) {
+            currentVolTab = tab;
+            document.querySelectorAll('#volunteer-portal .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${tab}`).classList.add('active');
+
+            const filters = document.getElementById('vol-filters-div');
+            const settings = document.getElementById('sec-vol-settings');
+            const container = document.getElementById('volunteer-tasks-container');
+
+            filters.classList.add('hidden');
+            settings.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            if (tab === 'vol-settings') {
+                settings.classList.remove('hidden');
+                container.classList.add('hidden');
+            } else {
+                if (tab === 'avail') filters.classList.remove('hidden');
+                renderVolunteerTasks();
+            }
+        }
+
+        async function loadVolunteerData() {
+            const res = await fetch('/api/tasks');
+            globalTasks = await res.json();
+
+            let hours = 0;
+            globalTasks.filter(t => t.status === 'Completed' && t.worker === currentUser.username).forEach(t => {
+                hours += parseInt(t.hours_expected || 0);
+            });
+            document.getElementById('total-hours-span').innerText = hours;
+
+            renderVolunteerTasks();
+        }
+
+        function renderVolunteerTasks() {
+            const container = document.getElementById('volunteer-tasks-container');
+            container.innerHTML = '';
+
+            let filtered = [];
+            if (currentVolTab === 'avail') {
+                filtered = globalTasks.filter(t => t.status === 'Open');
+                const searchVal = document.getElementById('search-title').value.toLowerCase();
+                const typeVal = document.getElementById('filter-type').value;
+
+                if (searchVal) filtered = filtered.filter(t => t.title.toLowerCase().includes(searchVal));
+                if (typeVal) filtered = filtered.filter(t => t.category === typeVal);
+
+            } else if (currentVolTab === 'accepted') {
+                filtered = globalTasks.filter(t => t.status === 'Accepted' && t.worker === currentUser.username);
+            } else if (currentVolTab === 'completed') {
+                filtered = globalTasks.filter(t => t.status === 'Completed' && t.worker === currentUser.username);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p>No items found.</p>`;
+                return;
+            }
+
+            filtered.forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'grid-card';
+                let actions = '';
+
+                if (currentVolTab === 'avail') {
+                    actions = `<form action="/api/tasks/action" method="POST">
+                        <input type="hidden" name="task_id" value="${task.task_id}">
+                        <input type="hidden" name="action" value="accept">
+                        <button class="btn btn-primary" type="submit">Accept Task</button>
+                    </form>`;
+                } else if (currentVolTab === 'accepted') {
+                    actions = `<form action="/api/tasks/action" method="POST">
+                        <input type="hidden" name="task_id" value="${task.task_id}">
+                        <input type="hidden" name="action" value="abandon">
+                        <button class="btn btn-danger" type="submit">Remove Task</button>
+                    </form>`;
+                } else {
+                    actions = `<span style="color:green; font-weight:bold;">✔ Finished</span>`;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <strong>${task.title}</strong> <span class="role-badge">${task.category}</span><br>
+                        <div class="task-meta">
+                            <strong>Posted by:</strong> ${task.poster}<br>
+                            <strong>When:</strong> ${formatTaskDate(task.date)}<br>
+                            <strong>Expected Duration:</strong> ${task.hours_expected} hours<br>
+                            <strong>Location Address:</strong> ${task.address || 'Not Provided'}<br>
+                            <strong>Details:</strong> ${task.description}
+                        </div>
+                    </div>
+                    <div>${actions}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.onload = initializeDashboard;
+    </script>
+</body>
+</html>

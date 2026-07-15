@@ -16,7 +16,7 @@ bool Database::init() {
         "CREATE TABLE IF NOT EXISTS Tasks ("
         "task_id INTEGER PRIMARY KEY AUTOINCREMENT, poster_username TEXT NOT NULL, title TEXT NOT NULL, "
         "description TEXT, category TEXT, address TEXT, task_date TEXT, status TEXT DEFAULT 'Open', "
-        "created_at DATETIME DEFAULT CURRENT_TIMESTAMP);";
+        "assigned_worker TEXT, hours_expected INTEGER DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);";
 
     char* errMsg = nullptr;
     if (sqlite3_exec(db.get(), create_users_table, nullptr, nullptr, &errMsg) != SQLITE_OK) {
