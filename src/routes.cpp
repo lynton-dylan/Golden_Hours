@@ -157,8 +157,15 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
         if (sqlite3_prepare_v2(db.get(), sql, -1, &raw_stmt, nullptr) != SQLITE_OK) return crow::response(500, "SQL Error");
         SqliteStmtPtr stmt(raw_stmt);
 
-        sqlite3_bind_text(stmt.get(), 1, username.c_str(), -1, SQLITE_STATIC);
         // implement the rest. as in title, description, category, address , task_date, hours_expected
+        
+        sqlite3_bind_text(stmt.get(), 1, username.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 2, title.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 3, description.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 4, category.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 5, address.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 6, task_date.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 7, hours_expected.c_str(), -1, SQLITE_STATIC);
 
         sqlite3_step(stmt.get());
 
