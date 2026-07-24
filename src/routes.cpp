@@ -200,8 +200,17 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
             t["poster"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
             t["title"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
 
-            // implement the rest. as in description, category, date, status , address, worker, hours_expected
-
+            auto get_text = [](sqlite3_stmt* s, int col) -> std::string{
+                const unsigned char* text = sqlite3_column_text(s, col);
+                return text ? reinterpret_cast<const char*>(text) : "";
+            };
+            t["description"] = get_text(stmt, 3);
+            t["category"] = get_text(stmt, 4);
+            t["date"] = get_text(stmt, 5);
+            t["status"] = get_text(stmt, 6);
+            t["address"] = get_text(stmt, 7);
+            t["worker"] = get_text(stmt, 8);
+            t["hours_expected"] = sqlite3_column_int(stmt, 9);
 
             task_list.push_back(std::move(t));
         }
