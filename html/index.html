@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Manager - Welcome</title>
+    <title>Login</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -85,6 +85,9 @@
 <body>
 
     <div class="container">
+        <div id="error-alert" class="hidden" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; font-size: 0.9em; border: 1px solid #f5c6cb;">
+            Invalid email or password. Please try again.
+        </div>
         <div id="login-box">
             <h2>Login</h2>
             <form action="/login" method="POST">
@@ -122,7 +125,7 @@
                     <label for="reg-role">Role</label>
                     <select id="reg-role" name="role" required>
                         <option value="Senior">Poster</option>
-                        <option value="Volunteer">Worker</option>
+                        <option value="Volunteer">volunteer</option>
                     </select>
                 </div>
                 <button type="submit">Create Account</button>
@@ -134,10 +137,27 @@
     </div>
 
     <script>
-    function toggleForms() {
-        document.getElementById('login-box').classList.toggle('hidden');
-        document.getElementById('register-box').classList.toggle('hidden');
-    }
+        function toggleForms() {
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('register-box').classList.toggle('hidden');
+        }
+        
+        function checkUrlError() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const error = urlParams.get('error');
+            if (error === 'invalid_credentials') {
+                const alertBox = document.getElementById('error-alert');
+                alertBox.innerText = "Invalid email or password. Please try again.";
+                alertBox.classList.remove('hidden');
+            } else if (error === 'missing_credentials') {
+                const alertBox = document.getElementById('error-alert');
+                alertBox.innerText = "Please fill in all required fields.";
+                alertBox.classList.remove('hidden');
+            }
+        }
+
+            window.onload = checkUrlError;
+   
     </script>
 
 </body>

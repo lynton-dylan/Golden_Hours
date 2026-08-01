@@ -147,6 +147,26 @@
             color: #555;
             line-height: 1.4;
         }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #export-summary-view, #export-summary-view * {
+                visibility: visible;
+            }
+
+            #export-summary-view {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -175,7 +195,7 @@
             </div>
 
             <div id="sec-post-task" class="tab-content hidden">
-                <h3>Post a New Task Requirement</h3>
+                <h3>Post a New Task </h3>
                 <form action="/api/tasks/create" method="POST" class="form-layout">
                     <div class="form-group">
                         <label>Task Title / Work Scope</label>
@@ -225,7 +245,7 @@
         <div id="volunteer-portal" class="hidden">
             <div id="hours-banner" style="background: #d4edda; color: #155724; padding: 12px; margin-bottom:15px; border-radius:6px; font-weight:bold;">
                 Total Completed Volunteer Hours: <span id="total-hours-span">0</span> hours
-                <button class="btn btn-primary" style="float: right; margin-top: -6px;" onclick="alert('Feature not implemented')">Print Form</button>
+                <button class="btn btn-primary" style="float: right; margin-top: -6px;" onclick="handlePrintForm()">Print Form</button>
             </div>
 
             <div class="tab-bar">
@@ -257,6 +277,35 @@
                     <button type="submit" class="btn btn-danger">Delete Profile Permanently</button>
                 </form>
             </div>
+        </div>
+        <div id="export-summary-view" class="hidden">
+            <div class="no-print" style="margin-bottom: 20px;">
+                <button class="btn btn-danger" onclick="cancelExport()">← Back to Dashboard</button>
+            </div>
+
+            <h2>Volunteer Hours Export</h2>
+            <hr>
+
+            <div style="background: #e9ecef; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p><strong>Volunteer Name:</strong> <span id="export-user-name"></span></p>
+                <p><strong>Total Hours Exported:</strong> <span id="export-total-hours" style="font-size: 1.2em; font-weight: bold; color: #28a745;">0</span> hours</p>
+                <p><strong>Export Date:</strong> <span id="export-date"></span></p>
+            </div>
+
+            <h3>Exported Tasks Detail</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;" border="1" cellpadding="8">
+                <thead>
+                    <tr style="background-color: #f2f2f2; text-align: left;">
+                        <th>Task ID</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Hours</th>
+                    </tr>
+                </thead>
+                <tbody id="export-tasks-table-body">
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -299,7 +348,75 @@
                 loadVolunteerData();
             }
         }
+        async function handlePrintForm() {
+            
+            const completedTasks = globalTasks.filter(t => t.status === 'Completed' && t.worker === currentUser.username);
 
+            if (completedTasks.length === 0) {
+                alert("You have no completed hours to export!");
+                return;
+            }
+
+            
+            try {
+                const response = await fetch('/api/tasks/export', { method: 'POST' });
+                if (!response.ok) {
+                    alert("Failed to export task hours.");
+                    return;
+                }
+
+                
+                let totalHours = 0;
+                const tbody = document.getElementById('export-tasks-table-body');
+                tbody.innerHTML = '';
+
+                completedTasks.forEach(task => {
+                    const hrs = parseInt(task.hours_expected || 0);
+                    totalHours += hrs;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                <td>#${task.task_id}</td>
+                <td>${task.title}</td>
+                <td>${task.category}</td>
+                <td>${formatTaskDate(task.date)}</td>
+                <td>${hrs} hr(s)</td>
+            `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('export-user-name').innerText = currentUser.username;
+                document.getElementById('export-total-hours').innerText = totalHours;
+                document.getElementById('export-date').innerText = new Date().toLocaleDateString();
+
+                
+                document.getElementById('volunteer-portal').classList.add('hidden');
+                document.getElementById('export-summary-view').classList.remove('hidden');
+
+                
+                setTimeout(() => {
+                    window.print();
+                }, 300);
+
+            } catch (err) {
+                console.error("Error exporting tasks:", err);
+            }
+        }
+
+        
+        window.onafterprint = function () {
+            returnToDashboard();
+        };
+
+        function cancelExport() {
+            returnToDashboard();
+        }
+
+        function returnToDashboard() {
+            document.getElementById('export-summary-view').classList.add('hidden');
+            document.getElementById('volunteer-portal').classList.remove('hidden');
+            loadVolunteerData();
+        }
         function switchSeniorTab(tabName) {
             document.querySelectorAll('#senior-portal .tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('#senior-portal .tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -411,7 +528,12 @@
             } else if (currentVolTab === 'accepted') {
                 filtered = globalTasks.filter(t => t.status === 'Accepted' && t.worker === currentUser.username);
             } else if (currentVolTab === 'completed') {
-                filtered = globalTasks.filter(t => t.status === 'Completed' && t.worker === currentUser.username);
+                filtered = globalTasks.filter(t => (t.status === 'Completed' || t.status === 'Exported') && t.worker === currentUser.username);
+                filtered.sort((a, b) => {
+                    if (a.status === 'Completed' && b.status === 'Exported') return -1;
+                    if (a.status === 'Exported' && b.status === 'Completed') return 1;
+                    return b.task_id - a.task_id; 
+                });
             }
 
             if (filtered.length === 0) {
@@ -437,7 +559,11 @@
                         <button class="btn btn-danger" type="submit">Remove Task</button>
                     </form>`;
                 } else {
-                    actions = `<span style="color:green; font-weight:bold;">✔ Finished</span>`;
+                    if (task.status === 'Exported') {
+                        actions = `<span style="color: #007BFF; font-weight: bold;">✔ Exported</span>`;
+                    } else {
+                        actions = `<span style="color: green; font-weight: bold;">✔ Finished</span>`;
+                    }
                 }
 
                 card.innerHTML = `

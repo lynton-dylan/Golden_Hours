@@ -23,7 +23,7 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
         });
 
     //Registration
-    CROW_ROUTE(app, "/register").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
+    CROW_ROUTE(app, "/register").methods(crow::HTTPMethod::POST)([&app](const crow::request& req) {
         std::string body_with_query = "?" + req.body;
         crow::query_string query_args(body_with_query);
 
@@ -55,9 +55,14 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
             return crow::response(400, "Registration failed.");
         }
 
+        auto& ctx = app.get_context<crow::CookieParser>(req);
+        ctx.set_cookie("username", name).path("/").httponly();
+        ctx.set_cookie("user_role", role).path("/").httponly();
+        ctx.set_cookie("user_email", email).path("/").httponly();
+
         crow::response res;
         res.code = 303;
-        res.set_header("Location", "/");
+        res.set_header("Location", "/dashboard");
         return res;
         });
 
@@ -99,7 +104,10 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
             return res;
         }
 
-        return crow::response(401, "Invalid credentials.");
+        crow::response res;
+        res.code = 303;
+        res.set_header("Location", "/?error=invalid_credentials");
+        return res;
         });
 
     //Dashboard
@@ -157,15 +165,15 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
         if (sqlite3_prepare_v2(db.get(), sql, -1, &raw_stmt, nullptr) != SQLITE_OK) return crow::response(500, "SQL Error");
         SqliteStmtPtr stmt(raw_stmt);
 
-        // implement the rest. as in title, description, category, address , task_date, hours_expected
+       
         
         sqlite3_bind_text(stmt.get(), 1, username.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 2, title.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 3, description.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 4, category.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 5, address.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 6, task_date.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt.get(), 7, hours_expected.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 2, title, -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 3, description, -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 4, category, -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 5, address, -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt.get(), 6, task_date, -1, SQLITE_STATIC);
+        sqlite3_bind_int(stmt.get(), 7, hours_expected);
 
         sqlite3_step(stmt.get());
 
@@ -278,16 +286,39 @@ void setup_routes(crow::App<crow::CookieParser>& app) {
         res.set_header("Location", "/");
         return res;
         });
+    // Export
+    CROW_ROUTE(app, "/api/tasks/export").methods(crow::HTTPMethod::POST)([&app](const crow::request& req) {
+        auto& ctx = app.get_context<crow::CookieParser>(req);
+        std::string username = ctx.get_cookie("username");
+        if (username.empty()) return crow::response(401, "Unauthorized");
+
+        auto db = Database::get_connection();
+        if (!db) return crow::response(500, "Database unavailable.");
+
+        
+        std::string sql = "UPDATE Tasks SET status = 'Exported' WHERE assigned_worker = ? AND status = 'Completed';";
+        sqlite3_stmt* raw_stmt = nullptr;
+
+        if (sqlite3_prepare_v2(db.get(), sql.c_str(), -1, &raw_stmt, nullptr) != SQLITE_OK) {
+            return crow::response(500, "Statement failed.");
+        }
+        SqliteStmtPtr stmt(raw_stmt);
+
+        sqlite3_bind_text(stmt.get(), 1, username.c_str(), -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt.get()) != SQLITE_DONE) {
+            return crow::response(500, "Failed to update task statuses.");
+        }
+
+        crow::response res;
+        res.code = 200;
+        res.set_header("Content-Type", "application/json");
+        res.body = R"({"status": "success"})";
+        return res;
+        });
 }
 
 
 
 
 
-// things left to implement
-// a better response then just "invalid credentials" for login 
-// when you register it logs you in
-// the hour export system, it should let you print a thing and then remove the hours from your account. 
-// finish the "/api/tasks" route 
-// finish the "/api/tasks/create" route
-// a couple other misc polish changes, that i cant remember right now.
